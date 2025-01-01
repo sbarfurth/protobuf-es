@@ -24,6 +24,14 @@ import { nestedTypes } from "@bufbuild/protobuf/reflect";
 import { safeIdentifier } from "./safe-identifier.js";
 
 /**
+ * Configuration for customizing identifiers based on descriptor types.
+ */
+export interface IdentifierConfig {
+  prefix?: string;
+  suffix?: string;
+}
+
+/**
  * Return a file path for the give file descriptor.
  */
 export function generateFilePath(
@@ -54,9 +62,10 @@ export function generateFilePath(
  */
 export function generatedDescName(
   desc: DescFile | DescEnum | DescMessage | DescExtension | DescService,
+  config: IdentifierConfig,
 ): string {
   const file = desc.kind == "file" ? desc : desc.file;
-  const { descNames } = allNames(file);
+  const { descNames } = allNames(file, config);
   const name = descNames.get(desc);
   if (name === undefined) {
     throw new Error(
@@ -69,8 +78,11 @@ export function generatedDescName(
 /**
  * Return a safe identifier for a generated shape.
  */
-export function generatedShapeName(desc: DescEnum | DescMessage): string {
-  const { shapeNames } = allNames(desc.file);
+export function generatedShapeName(
+  desc: DescEnum | DescMessage,
+  config: IdentifierConfig,
+): string {
+  const { shapeNames } = allNames(desc.file, config);
   const name = shapeNames.get(desc);
   if (name === undefined) {
     throw new Error(
@@ -83,8 +95,11 @@ export function generatedShapeName(desc: DescEnum | DescMessage): string {
 /**
  * Return a safe identifier for a generated JSON type.
  */
-export function generatedJsonTypeName(desc: DescEnum | DescMessage): string {
-  const { jsonTypeNames } = allNames(desc.file);
+export function generatedJsonTypeName(
+  desc: DescEnum | DescMessage,
+  config: IdentifierConfig,
+): string {
+  const { jsonTypeNames } = allNames(desc.file, config);
   const name = jsonTypeNames.get(desc);
   if (name === undefined) {
     throw new Error(
@@ -100,6 +115,7 @@ export function generatedJsonTypeName(desc: DescEnum | DescMessage): string {
 function idealDescName(
   desc: DescFile | DescEnum | DescMessage | DescExtension | DescService,
   i: number,
+  config: IdentifierConfig,
 ): string {
   const escape = i === 0 ? "" : i === 1 ? "$" : `$${i - 1}`;
   if (desc.kind == "file") {
@@ -108,30 +124,38 @@ function idealDescName(
   }
   switch (desc.kind) {
     case "enum":
-      return safeIdentifier(identifier(desc) + "Schema" + escape);
+      return safeIdentifier(identifier(desc, config) + "Schema" + escape);
     case "message":
-      return safeIdentifier(identifier(desc) + "Schema" + escape);
+      return safeIdentifier(identifier(desc, config) + "Schema" + escape);
     case "extension":
-      return safeIdentifier(identifier(desc) + escape);
+      return safeIdentifier(identifier(desc, config) + escape);
     case "service":
-      return safeIdentifier(identifier(desc) + escape);
+      return safeIdentifier(identifier(desc, config) + escape);
   }
 }
 
 /**
  * Compute the ideal name for a generated shape.
  */
-function idealShapeName(desc: DescEnum | DescMessage, i: number): string {
+function idealShapeName(
+  desc: DescEnum | DescMessage,
+  i: number,
+  config: IdentifierConfig,
+): string {
   const escape = i === 0 ? "" : i === 1 ? "$" : `$${i - 1}`;
-  return safeIdentifier(identifier(desc) + escape);
+  return safeIdentifier(identifier(desc, config) + escape);
 }
 
 /**
  * Compute the ideal name for a generated JSON type.
  */
-function idealJsonTypeName(desc: DescEnum | DescMessage, i: number): string {
+function idealJsonTypeName(
+  desc: DescEnum | DescMessage,
+  i: number,
+  config: IdentifierConfig,
+): string {
   const escape = i === 0 ? "" : i === 1 ? "$" : `$${i - 1}`;
-  return safeIdentifier(identifier(desc) + "Json" + escape);
+  return safeIdentifier(identifier(desc, config) + "Json" + escape);
 }
 
 /**
@@ -147,17 +171,20 @@ function idealJsonTypeName(desc: DescEnum | DescMessage, i: number): string {
  */
 function identifier(
   desc: DescEnum | DescMessage | DescExtension | DescService,
+  config: IdentifierConfig,
 ): string {
   const pkg = desc.file.proto.package;
   const offset = pkg.length > 0 ? pkg.length + 1 : 0;
   const nameWithoutPkg = desc.typeName.substring(offset);
-  return nameWithoutPkg.replace(/\./g, "_");
+  const prefix = config.prefix ?? "";
+  const suffix = config.suffix ?? "";
+  return prefix + nameWithoutPkg.replace(/\./g, "_") + suffix;
 }
 
 /**
  * Compute all ideal names for the elements in the file, resolving name clashes.
  */
-function allNames(file: DescFile) {
+function allNames(file: DescFile, config: IdentifierConfig) {
   const taken = new Set<string>();
   // In the first pass, register shape names
   const shapeNames = new Map<DescEnum | DescMessage, string>();
@@ -167,7 +194,7 @@ function allNames(file: DescFile) {
     }
     let name: string;
     for (let i = 0; ; i++) {
-      name = idealShapeName(desc, i);
+      name = idealShapeName(desc, i, config);
       if (!taken.has(name)) {
         break;
       }
@@ -186,7 +213,7 @@ function allNames(file: DescFile) {
       case "enum":
       case "message": {
         for (let i = 0; ; i++) {
-          name = idealDescName(desc, i);
+          name = idealDescName(desc, i, config);
           if (!taken.has(name)) {
             break;
           }
@@ -195,7 +222,7 @@ function allNames(file: DescFile) {
       }
       default: {
         for (let i = 0; ; i++) {
-          name = idealDescName(desc, i);
+          name = idealDescName(desc, i, config);
           if (!taken.has(name)) {
             break;
           }
@@ -214,7 +241,7 @@ function allNames(file: DescFile) {
     }
     let name: string;
     for (let i = 0; ; i++) {
-      name = idealJsonTypeName(desc, i);
+      name = idealJsonTypeName(desc, i, config);
       if (!taken.has(name)) {
         break;
       }

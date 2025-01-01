@@ -34,6 +34,60 @@ describe("GeneratedFile.importShape", () => {
       },
     });
   });
+  test("should create prefixed import symbol for enum descriptor", async function () {
+    await createTestPluginAndRun({
+      proto: `
+      syntax="proto3";
+      enum Foo {
+        FOO_UNSPECIFIED = 0;
+        FOO_BAR = 1;
+      }
+      `,
+      parameter: "target=ts,type_prefix=Bar",
+      generateAny(f, schema) {
+        const imp = f.importShape(schema.files[0].enums[0]);
+        expect(imp.name).toBe("BarFoo");
+        expect(imp.from).toBe("./x_pb.js");
+        expect(imp.typeOnly).toBe(true);
+      },
+    });
+  });
+  test("should create suffixed import symbol for enum descriptor", async function () {
+    await createTestPluginAndRun({
+      proto: `
+      syntax="proto3";
+      enum Foo {
+        FOO_UNSPECIFIED = 0;
+        FOO_BAR = 1;
+      }
+      `,
+      parameter: "target=ts,type_suffix=Bar",
+      generateAny(f, schema) {
+        const imp = f.importShape(schema.files[0].enums[0]);
+        expect(imp.name).toBe("FooBar");
+        expect(imp.from).toBe("./x_pb.js");
+        expect(imp.typeOnly).toBe(true);
+      },
+    });
+  });
+  test("should create prefixed and suffixed import symbol for enum descriptor", async function () {
+    await createTestPluginAndRun({
+      proto: `
+      syntax="proto3";
+      enum Foo {
+        FOO_UNSPECIFIED = 0;
+        FOO_BAR = 1;
+      }
+      `,
+      parameter: "target=ts,type_prefix=Bar,type_suffix=Baz",
+      generateAny(f, schema) {
+        const imp = f.importShape(schema.files[0].enums[0]);
+        expect(imp.name).toBe("BarFooBaz");
+        expect(imp.from).toBe("./x_pb.js");
+        expect(imp.typeOnly).toBe(true);
+      },
+    });
+  });
   test("should create import symbol for message descriptor", async function () {
     await createTestPluginAndRun({
       proto: `
@@ -44,6 +98,51 @@ describe("GeneratedFile.importShape", () => {
       generateAny(f, schema) {
         const imp = f.importShape(schema.files[0].messages[0]);
         expect(imp.name).toBe("Person");
+        expect(imp.from).toBe("./x_pb.js");
+        expect(imp.typeOnly).toBe(true);
+      },
+    });
+  });
+  test("should create prefixed import symbol for message descriptor", async function () {
+    await createTestPluginAndRun({
+      proto: `
+      syntax="proto3";
+      message Person {}
+      `,
+      parameter: "target=ts,type_prefix=Foo",
+      generateAny(f, schema) {
+        const imp = f.importShape(schema.files[0].messages[0]);
+        expect(imp.name).toBe("FooPerson");
+        expect(imp.from).toBe("./x_pb.js");
+        expect(imp.typeOnly).toBe(true);
+      },
+    });
+  });
+  test("should create suffixed import symbol for message descriptor", async function () {
+    await createTestPluginAndRun({
+      proto: `
+      syntax="proto3";
+      message Person {}
+      `,
+      parameter: "target=ts,type_suffix=Foo",
+      generateAny(f, schema) {
+        const imp = f.importShape(schema.files[0].messages[0]);
+        expect(imp.name).toBe("PersonFoo");
+        expect(imp.from).toBe("./x_pb.js");
+        expect(imp.typeOnly).toBe(true);
+      },
+    });
+  });
+  test("should create prefixed and suffixed import symbol for message descriptor", async function () {
+    await createTestPluginAndRun({
+      proto: `
+      syntax="proto3";
+      message Person {}
+      `,
+      parameter: "target=ts,type_prefix=Foo,type_suffix=Bar",
+      generateAny(f, schema) {
+        const imp = f.importShape(schema.files[0].messages[0]);
+        expect(imp.name).toBe("FooPersonBar");
         expect(imp.from).toBe("./x_pb.js");
         expect(imp.typeOnly).toBe(true);
       },

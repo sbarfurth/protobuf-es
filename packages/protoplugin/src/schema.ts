@@ -46,6 +46,7 @@ import {
   generatedShapeName,
   generateFilePath,
   generatedJsonTypeName,
+  type IdentifierConfig,
 } from "./names.js";
 import { createRuntimeImports } from "./runtime-imports.js";
 
@@ -107,6 +108,10 @@ export function createSchema<T extends object>(
   minimumEdition: Edition,
   maximumEdition: Edition,
 ): SchemaController<T> {
+  const identifierConfig: IdentifierConfig = {
+    prefix: parameter.parsed.typePrefix,
+    suffix: parameter.parsed.typeSuffix,
+  };
   const { allFiles, filesToGenerate } = getFilesToGenerate(
     request,
     minimumEdition,
@@ -117,7 +122,7 @@ export function createSchema<T extends object>(
   const runtime = createRuntimeImports(parameter.parsed.bootstrapWkt);
   const resolveDescImport: ResolveDescImportFn = (desc, typeOnly) =>
     createImportSymbol(
-      generatedDescName(desc),
+      generatedDescName(desc, identifierConfig),
       generateFilePath(
         desc.kind == "file" ? desc : desc.file,
         parameter.parsed.bootstrapWkt,
@@ -127,7 +132,7 @@ export function createSchema<T extends object>(
     );
   const resolveShapeImport: ResolveShapeImportFn = (desc) =>
     createImportSymbol(
-      generatedShapeName(desc),
+      generatedShapeName(desc, identifierConfig),
       generateFilePath(
         desc.file,
         parameter.parsed.bootstrapWkt,
@@ -137,7 +142,7 @@ export function createSchema<T extends object>(
     );
   const resolveJsonImport: ResolveShapeImportFn = (desc) =>
     createImportSymbol(
-      generatedJsonTypeName(desc),
+      generatedJsonTypeName(desc, identifierConfig),
       generateFilePath(
         desc.file,
         parameter.parsed.bootstrapWkt,

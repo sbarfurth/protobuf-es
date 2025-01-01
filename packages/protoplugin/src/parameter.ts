@@ -69,6 +69,14 @@ export interface EcmaScriptPluginOptions {
    * @private
    */
   rewriteImports: RewriteImports;
+  /**
+   * @private
+   */
+  typePrefix: string;
+  /**
+   * @private
+   */
+  typeSuffix: string;
 }
 
 export interface ParsedParameter<T> {
@@ -107,6 +115,8 @@ export function parseParameter<T extends object>(
   let tsNocheck = false;
   let bootstrapWkt = false;
   let keepEmptyFiles = false;
+  let typePrefix = "";
+  let typeSuffix = "";
   const rewriteImports: RewriteImports = [];
   let importExtension: ImportExtension = "none";
   let jsImportStyle: "module" | "legacy_commonjs" = "module";
@@ -226,6 +236,12 @@ export function parseParameter<T extends object>(
         }
         break;
       }
+      case "type_prefix":
+        typePrefix = value;
+        break;
+      case "type_suffix":
+        typeSuffix = value;
+        break;
       default:
         if (parseExtraOptions === undefined) {
           throw new PluginOptionError(raw);
@@ -247,6 +263,8 @@ export function parseParameter<T extends object>(
     importExtension,
     jsImportStyle,
     keepEmptyFiles,
+    typePrefix,
+    typeSuffix,
   };
   if (parseExtraOptions === undefined || extraParameters.length === 0) {
     return {
